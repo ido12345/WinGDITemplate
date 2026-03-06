@@ -1,5 +1,6 @@
-#include <stdbool.h>
+#define WIN32_LEAN_AND_MEAN
 #include <windows.h>
+#include <stdbool.h>
 
 static int RectWidth(RECT rect) {
     return rect.right - rect.left;
@@ -16,12 +17,7 @@ static HBITMAP hDoubleBufferBitmap = NULL;
 
 static HBRUSH hBackgroundBrush = NULL;
 
-static void ResizeWindow(int w, int h) {
-    WindowWidth = w;
-    WindowHeight = h;
-}
-
-static void DestroyDoubleBuffer() {
+static void DestroyDoubleBuffer(void) {
     SelectObject(hDoubleBufferDC, NULL);
     DeleteDC(hDoubleBufferDC);
     DeleteObject(hDoubleBufferBitmap);
@@ -34,6 +30,16 @@ static void NewDoubleBuffer(HDC hdc, int w, int h) {
     hDoubleBufferDC = CreateCompatibleDC(hdc);
     hDoubleBufferBitmap = CreateCompatibleBitmap(hdc, w, h);
     SelectObject(hDoubleBufferDC, hDoubleBufferBitmap);
+}
+
+static void ResizeWindow(HWND hwnd) {
+    RECT ClientRect;
+    GetClientRect(hwnd, &ClientRect);
+    WindowWidth = RectWidth(ClientRect);
+    WindowHeight = RectHeight(ClientRect);
+    HDC hdc = GetDC(hwnd);
+    NewDoubleBuffer(hdc, WindowWidth, WindowHeight);
+    ReleaseDC(hwnd, hdc);
 }
 
 static void DestroyBrush(HBRUSH *brush) {
@@ -64,25 +70,25 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
                 FillRect(hDoubleBufferDC, &ClientRect, hBackgroundBrush);
 
                 // Copy Double Buffer To Window Frame
-                BitBlt(hdc,
-                       0, 0, WindowWidth, WindowHeight,
-                       hDoubleBufferDC, 0, 0,
-                       SRCCOPY);
+                BitBlt(
+                    hdc,
+                    0, 0,
+                    WindowWidth, WindowHeight,
+                    hDoubleBufferDC,
+                    0, 0,
+                    SRCCOPY
+                );
             }
+
+            EndPaint(hwnd, &ps);
         } break;
         case WM_CREATE: {
-            RECT ClientRect;
-            GetClientRect(hwnd, &ClientRect);
-            ResizeWindow(RectWidth(ClientRect), RectHeight(ClientRect));
-            NewDoubleBuffer(GetDC(hwnd), WindowWidth, WindowHeight);
+            ResizeWindow(hwnd);
 
             NewBrush(&hBackgroundBrush, RGB(255, 255, 255));
         } break;
         case WM_SIZE: {
-            RECT ClientRect;
-            GetClientRect(hwnd, &ClientRect);
-            ResizeWindow(RectWidth(ClientRect), RectHeight(ClientRect));
-            NewDoubleBuffer(GetDC(hwnd), WindowWidth, WindowHeight);
+            ResizeWindow(hwnd);
 
             InvalidateRect(hwnd, NULL, false);
         } break;
@@ -102,8 +108,8 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
 
 const char WindowClassName[] = "TemplateWindowClass";
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow) {
-    (void) hPrevInstance;
-    (void) lpCmdLine;
+    (void)hPrevInstance;
+    (void)lpCmdLine;
 
     WNDCLASSEX wc = {
         .cbSize = sizeof(wc),
@@ -137,7 +143,8 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
         dwStyle,
         CW_USEDEFAULT, CW_USEDEFAULT,
         RectWidth(WindowRect), RectHeight(WindowRect),
-        NULL, NULL, hInstance, NULL);
+        NULL, NULL, hInstance, NULL
+    );
     if (!hwnd) {
         MessageBox(NULL, "Window Creation Failed!", "Error!", MB_ICONEXCLAMATION | MB_OK);
         return -1;
