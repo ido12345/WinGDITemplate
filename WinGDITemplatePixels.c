@@ -254,9 +254,9 @@ Rect WindowRect = {};
 Rect LeftRect = {};
 Rect RightRect = {};
 
-int x = 0, y = 0;
-int dx = 10, dy = 10;
-int size = 50;
+int ballX = 0, ballY = 0;
+int ballDx = 10, ballDy = 10;
+int ballSize = 50;
 
 constexpr Color backgroundColor = RGBA(0x18, 0x18, 0x18, 0xff);
 constexpr Color boundaryColor = RGBA(0x80, 0x80, 0x80, 0xff);
@@ -275,24 +275,24 @@ void CalculateBoundaries() {
 
 DWORD UpdateLoop(void *param [[maybe_unused]]) {
     for (;; Sleep(DeltaTime * 1000.0)) {
-        int nx = x + dx;
+        int nx = ballX + ballDx;
         if (nx < LeftRect.left) {
-            dx = abs(dx);
+            ballDx = -ballDx;
             nx = 0;
-        } else if (nx + size >= LeftRect.right) {
-            dx = -abs(dx);
-            nx = LeftRect.right - size - 1;
+        } else if (nx + ballSize >= LeftRect.right) {
+            ballDx = -ballDx;
+            nx = LeftRect.right - ballSize - 1;
         }
-        x = nx;
-        int ny = y + dy;
+        ballX = nx;
+        int ny = ballY + ballDy;
         if (ny < LeftRect.top) {
-            dy = abs(dy);
+            ballDy = -ballDy;
             ny = 0;
-        } else if (ny + size >= LeftRect.bottom) {
-            dy = -abs(dy);
-            ny = LeftRect.bottom - size - 1;
+        } else if (ny + ballSize >= LeftRect.bottom) {
+            ballDy = -ballDy;
+            ny = LeftRect.bottom - ballSize - 1;
         }
-        y = ny;
+        ballY = ny;
     }
     return 0;
 }
@@ -302,8 +302,13 @@ void Render() {
 
     DrawBackground(WindowRect, backgroundColor);
 
-    DrawRect(LeftRect, (Rect){x, y, x + size, y + size}, RGBA(0xff, 0, 0, 0xff));
-    DrawRect(RightRect, (Rect){x, y, x + size, y + size}, RGBA(0, 0, 0xff, 0xff));
+    // DrawRect(LeftRect, (Rect){x, y, x + size, y + size}, RGBA(0xff, 0, 0, 0xff));
+    // DrawRect(RightRect, (Rect){x, y, x + size, y + size}, RGBA(0, 0, 0xff, 0xff));
+    int r = ballSize / 2;
+    int x = ballX + r;
+    int y = ballY + r;
+    DrawCircle(LeftRect, (Circle){x, y, r}, RGBA(0xff, 0, 0, 0xff));
+    DrawCircle(RightRect, (Circle){x, y, r}, RGBA(0, 0, 0xff, 0xff));
 
     DrawBoundary(LeftRect, boundaryWidth, boundaryColor);
     DrawBoundary(RightRect, boundaryWidth, boundaryColor);
