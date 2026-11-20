@@ -1,5 +1,5 @@
 const std = @import("std");
-const win = @import("win.zig");
+const win = @import("win");
 
 fn RectWidth(rect: win.RECT) i32 {
     return rect.right - rect.left;
@@ -45,22 +45,22 @@ fn PixelsAt(x: i32, y: i32) *Color {
 }
 
 fn BlendColor(c1: *Color, c2: Color) void {
-    var R1: Color = R(c1.*);
-    var G1: Color = G(c1.*);
-    var B1: Color = B(c1.*);
-    var A1: Color = A(c1.*);
+    const R1: Color = R(c1.*);
+    const G1: Color = G(c1.*);
+    const B1: Color = B(c1.*);
+    const A1: Color = A(c1.*);
 
     const R2: Color = R(c2);
     const G2: Color = G(c2);
     const B2: Color = B(c2);
     const A2: Color = A(c2);
 
-    R1 = (R1 * (0xff - A2) + R2 * A2) / 0xff;
-    G1 = (G1 * (0xff - A2) + G2 * A2) / 0xff;
-    B1 = (B1 * (0xff - A2) + B2 * A2) / 0xff;
-    A1 = (A1 * (0xff - A2) + A2 * 0xff) / 0xff;
-
-    c1.* = RGBA(@intCast(R1), @intCast(G1), @intCast(B1), @intCast(A1));
+    c1.* = RGBA(
+        @intCast((R1 * (0xff - A2) + R2 * A2) / 0xff),
+        @intCast((G1 * (0xff - A2) + G2 * A2) / 0xff),
+        @intCast((B1 * (0xff - A2) + B2 * A2) / 0xff),
+        @intCast((A1 * (0xff - A2) + A2 * 0xff) / 0xff),
+    );
 }
 
 const Point = struct {
@@ -247,14 +247,16 @@ fn NewDoubleBuffer(hdc: win.HDC, w: i32, h: i32) void {
         DestroyDoubleBuffer();
     }
     hDoubleBufferDC = win.CreateCompatibleDC(hdc);
-    const bmi: win.BITMAPINFO = .{ .bmiHeader = .{
-        .biSize = @sizeOf(win.BITMAPINFOHEADER),
-        .biWidth = w,
-        .biHeight = -h,
-        .biPlanes = 1,
-        .biBitCount = 32,
-        .biCompression = win.BI_RGB,
-    } };
+    const bmi: win.BITMAPINFO = .{
+        .bmiHeader = .{
+            .biSize = @sizeOf(win.BITMAPINFOHEADER),
+            .biWidth = w,
+            .biHeight = -h,
+            .biPlanes = 1,
+            .biBitCount = 32,
+            .biCompression = win.BI_RGB,
+        },
+    };
     hDoubleBufferBitmap = win.CreateDIBSection(hDoubleBufferDC, &bmi, win.DIB_RGB_COLORS, @ptrCast(&Pixels), null, 0);
     _ = win.SelectObject(hDoubleBufferDC, hDoubleBufferBitmap);
 }
@@ -441,7 +443,7 @@ pub export fn wWinMain(
         .hInstance = hInstance,
         .style = 0,
         .lpszMenuName = null,
-        .hbrBackground = null, //@ptrFromInt(win.COLOR_WINDOW + 1),
+        .hbrBackground = null,
         .hIcon = win.LoadIconA(null, IDI_APPLICATION), // big icon
         .hIconSm = win.LoadIconA(null, IDI_APPLICATION), // small icon
         .hCursor = win.LoadCursorA(null, IDC_ARROW),
